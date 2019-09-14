@@ -10,10 +10,6 @@ CONFIG -= app_bundle
 QT -= gui
 QT += core
 
-# Optimization flags
-QMAKE_CXXFLAGS  -= -O -O1 -O2
-QMAKE_CXXFLAGS  += -O2
-
 # Libs
 #LIBS +=
 
@@ -41,12 +37,16 @@ SOURCES += \
     src/bayesiannetwork/bayesiannetwork.cc \
     src/bayesiannetwork/node/node.cc \
     src/main.cc \
-    src/utils/normal.cc
+    src/utils/normal.cc \
+    src/inference/inference.cc \
+    src/utils/utils.cc
 
 HEADERS += \
     src/bayesiannetwork/bayesiannetwork.hh \
     src/bayesiannetwork/node/node.hh \
-    src/utils/normal.hh
+    src/utils/normal.hh \
+    src/inference/inference.hh \
+    src/utils/utils.hh
 
 DISTFILES += \
     data/gas-bn.json

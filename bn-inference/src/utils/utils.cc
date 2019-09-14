@@ -17,21 +17,22 @@
  *
  */
 
-#include <QCoreApplication>
-#include <bayesiannetwork/bayesiannetwork.hh>
-#include <inference/inference.hh>
+#include "utils.hh"
+#include <utils/normal.hh>
 
-#include <iostream>
+Utils::Utils() {}
 
-int main(int argc, char *argv[])
-{
-    QCoreApplication app(argc, argv);
-
-    // Create bayesian network
-    BayesianNetwork bn("../../bn-inference/data/gas-bn.json");
-
-    // Init inference module
-    Inference bpInference(&bn);
-
-    return app.exec();
+Normal Utils::calculateExpectation(Normal pi, Normal lambda) {
+    // Check if variance is inf
+    if(pi.variance()==qInf() && lambda.variance()==qInf()) {
+        return Normal((pi.mean()+lambda.mean())/2, qInf());
+    } else if (pi.variance()==qInf()) {
+        return lambda;
+    } else if (lambda.variance()==qInf()) {
+        return pi;
+    } else {
+        double mean = (pi.variance()*lambda.mean() + lambda.variance()*pi.mean())/(pi.variance() + lambda.variance());
+        double variance = (pi.variance()*lambda.variance())/(pi.variance() + lambda.variance());
+        return Normal(mean, variance);
+    }
 }

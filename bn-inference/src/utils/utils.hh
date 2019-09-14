@@ -17,21 +17,17 @@
  *
  */
 
-#include <QCoreApplication>
-#include <bayesiannetwork/bayesiannetwork.hh>
-#include <inference/inference.hh>
+#ifndef UTILS_HH
+#define UTILS_HH
 
-#include <iostream>
+class Normal;
 
-int main(int argc, char *argv[])
-{
-    QCoreApplication app(argc, argv);
+class Utils {
+public:
+    static Normal calculateExpectation(Normal pi, Normal lambda);
 
-    // Create bayesian network
-    BayesianNetwork bn("../../bn-inference/data/gas-bn.json");
+private:
+    Utils(); // Static Class: deactivate constructor
+};
 
-    // Init inference module
-    Inference bpInference(&bn);
-
-    return app.exec();
-}
+#endif // UTILS_HH

@@ -38,12 +38,6 @@ public:
     QList<Node*> getParents() { return _pa; }
     QList<Node*> getChildren() { return _ch; }
 
-    // Belief propagation auxiliar distributions [Move to belief propagation class]
-    bool hasEvidence;
-    Normal piValue;
-    Normal lambdaValue;
-    void resetPiLambdaValues();
-
     // Operator overload
     static bool compareIndex(Node* n1, Node* n2) { return (n1->getIndex() < n2->getIndex()); }
 

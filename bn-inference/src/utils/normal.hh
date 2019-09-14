@@ -21,7 +21,6 @@
 #define NORMAL_HH
 
 #include <QtGlobal>
-#include <iostream>
 
 class Normal {
 public:

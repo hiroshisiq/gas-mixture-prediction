@@ -18,7 +18,7 @@
  */
 
 #include "bayesiannetwork.hh"
-#include <assert.h>
+#include <iostream>
 
 // Important: this function only works if the nodes on the json are sorted by index
 BayesianNetwork::BayesianNetwork(QString jsonFileName) {

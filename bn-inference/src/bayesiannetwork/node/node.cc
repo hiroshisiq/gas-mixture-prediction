@@ -24,11 +24,6 @@ Node::Node(QString name, quint32 index, Normal prior) {
     _name = name;
     _index = index;
     _prior = prior;
-
-    // Init pi and lambda values
-    piValue = Normal();
-    lambdaValue = Normal();
-    hasEvidence = false;
 }
 
 Node& Node::addPA(Node *parent) {
@@ -39,9 +34,4 @@ Node& Node::addPA(Node *parent) {
 Node& Node::addCH(Node *child) {
     _ch.append(child);
     return (*this);
-}
-
-void Node::resetPiLambdaValues() {
-    piValue = Normal();
-    lambdaValue = Normal();
 }
