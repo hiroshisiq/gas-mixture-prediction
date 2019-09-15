@@ -66,7 +66,7 @@ Inference::Inference(BayesianNetwork *bn) {
     // For the root nodes initialize expectation and pi values
     for(int i=0; i<_numOfVariable; i++) {
         // If list of parent is empty, node is root node
-        if(_bn->nodeList[i]->getParents().isEmpty()) {
+        if(_bn->nodeList[i]->getParents().isEmpty() && i <= 2) {
             _piValue[i] = _bn->nodeList[i]->getPrior();
             _expectation[i] = _bn->nodeList[i]->getPrior();
         } else {
