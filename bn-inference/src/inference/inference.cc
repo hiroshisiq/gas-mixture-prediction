@@ -55,6 +55,7 @@ Inference::Inference(BayesianNetwork *bn) {
         // Initialize vectors
         _hasEvidence[i] = false;     // has no evidence
         _lambdaValue[i] = Normal();  // lambda val: mean 0 and var inf
+        _expectation[i] = Normal();
 
         for(int j=0; j<_numOfVariable; j++) {
             // Initialize matrix
@@ -287,18 +288,57 @@ void Inference::updateTree(QVector<QString> nodes, QVector<double> evidence) {
 
 }
 
-QVector<Normal> Inference::getExpectation(QVector<QString> namelist) {
-    QVector<Normal> expArray;
+QHash<QString, Normal> Inference::getExpectation(QVector<QString> namelist) {
+    QHash<QString, Normal> expectation;
 
     // Check name list
     for(int i=0; i<namelist.size(); i++) {
         for(int j=0; j<_bn->nodeList.size(); j++) {
             if(_bn->nodeList[j]->getName() == namelist[i]) {
-                expArray.append(_expectation[j]);
+                expectation[namelist[i]] = _expectation[j];
                 break;
             }
         }
     }
 
-    return expArray;
+    return expectation;
+}
+
+void Inference::resetEvidences() {
+    // Initialize values
+    for(int i=0; i<_numOfVariable; i++) {
+        // Initialize vectors
+        _hasEvidence[i] = false;     // has no evidence
+        _lambdaValue[i] = Normal();  // lambda val: mean 0 and var inf
+        _expectation[i] = Normal();
+
+        for(int j=0; j<_numOfVariable; j++) {
+            // Initialize matrix
+            _piMessage[i][j] = Normal();     // pi mess:     mean 0 and var inf
+            _lambdaMessage[i][j] = Normal(); // lambda mess: mean 0 and var inf
+        }
+    }
+
+    // For the root nodes initialize expectation and pi values
+    for(int i=0; i<_numOfVariable; i++) {
+        // If list of parent is empty, node is root node
+        if(_bn->nodeList[i]->getParents().isEmpty() && i <= 2) {
+            _piValue[i] = _bn->nodeList[i]->getPrior();
+            _expectation[i] = _bn->nodeList[i]->getPrior();
+        } else {
+            _piValue[i] = Normal(); // lambda val: mean 0 and var inf
+            _expectation[i] = Normal();
+        }
+    }
+
+    // Root nodes send pi message
+    for(int i=0; i<_numOfVariable; i++) {
+        // If list of parent is empty, node is root node
+        if(_bn->nodeList[i]->getParents().isEmpty()) {
+            for(int j=0; j<_bn->nodeList[i]->getChildren().size(); j++) {
+                // Send pi message
+                sendPiMessage(_bn->nodeList[i], _bn->nodeList[i]->getChildren()[j]);
+            }
+        }
+    }
 }

@@ -20,6 +20,7 @@
 #include <QCoreApplication>
 #include <bayesiannetwork/bayesiannetwork.hh>
 #include <inference/inference.hh>
+#include <utils/utils.hh>
 
 #include <iostream>
 
@@ -32,19 +33,101 @@ int main(int argc, char *argv[])
 
     // Init inference module
     Inference bpInference(&bn);
-    QVector<QString> nodes({"Sensor1", "Sensor2", "Sensor3", "Sensor4", "Sensor5", "Sensor6", "Sensor7", "Sensor8", "Sensor9", "Sensor10", "Sensor11", "Sensor12", "Sensor13", "Sensor14", "Sensor15", "Sensor16"});
 
-    // Update network with evidence
-    // CO2 (253.33), Ethylene (6.67)
-    QVector<double> evidence({2330.91,3856.25,3488.77,3990.66,2125.76,2553.89,4134.21,4354.47,614.88,760.26,3598.64,3086.82,1106.49,1175.79,3798.68,3481.08});
-    bpInference.updateTree(nodes, evidence);
-
-    // Get expectation of some nodes
-    QVector<QString> expNodes({"CO2", "Ethylene"});
-    QVector<Normal> exp = bpInference.getExpectation(expNodes);
-    for(Normal n : exp) {
-        std::cout << "Expectation: (" << n.mean() << ", " << n.variance() << ")\n";
+    // Load test file
+    QFile file("../../bn-inference/data/test_sample.csv");
+    if (!file.open(QIODevice::ReadOnly)) {
+        std::cout << file.errorString().toStdString() << "\n";
+        return 1;
     }
 
+    // Open test write file
+    QFile fileOut("../../bn-inference/data/test_output.csv");
+    if (fileOut.open(QFile::WriteOnly | QFile::Truncate)==false) {
+        return 0;
+    }
+
+    // Create stream to file
+    QTextStream stream(&fileOut);
+    stream << "CO2" << ", " << "Ethylene" << "\n"; // this writes first line with two columns
+
+    // Evidence nodes
+    QVector<QString> nodes({"Sensor1", "Sensor2", "Sensor3", "Sensor4", "Sensor5", "Sensor6", "Sensor7", "Sensor8", "Sensor9", "Sensor10", "Sensor11", "Sensor12", "Sensor13", "Sensor14", "Sensor15", "Sensor16"});
+
+    // Row counter
+    int rowCounter = 0;
+
+    // Run inference
+    while (!file.atEnd()) {
+        // Read Line
+        QByteArray line = file.readLine();
+        QString string_line = QString::fromLocal8Bit(line.data());
+        QStringList wordList(string_line.split(','));
+
+        // Skip header
+        if(rowCounter++==0) { continue; }
+
+        // Convert line to evidence array
+        QVector<double> evidence;
+        for(int i=2; i<wordList.size(); i++) {
+            // Remove any extra information from number
+            wordList[i] = wordList[i].simplified();
+
+            // Convert to double
+            bool ok;
+            double number = wordList[i].toDouble(&ok);
+
+            // Return error in case conversion don go well
+            if(ok!=true) return 1;
+
+            // Append to evidence list
+            evidence.append(number);
+        }
+
+        // Update with evidence
+        bpInference.updateTree(nodes, evidence);
+
+        // Get expectation of some nodes
+        QVector<QString> expNodes({"CO2", "Ethylene"});
+        QHash<QString, Normal> exp = bpInference.getExpectation(expNodes);
+
+        // Write expectation into file
+        for(QString name : expNodes) {
+            // Get values
+            double mean = exp[name].mean();
+            double var = exp[name].variance();
+
+            // Write CO2
+            if(name=="CO2") {
+                // Max and Min values
+                mean = (mean>600)? 600 : mean;
+                mean = (mean<0)?     0 : mean;
+
+                // Write to file
+                stream << mean << ",";
+            }
+
+            // Write CO2
+            if(name=="Ethylene") {
+                // Max and Min values
+                mean = (mean>20)? 20 : mean;
+                mean = (mean<0)?   0 : mean;
+
+                // Write to file
+                stream << mean << "\n";
+            }
+
+        }
+
+        // Reset
+        bpInference.resetEvidences();
+
+        // Print progress
+        Utils::printProgress(rowCounter, 200000);
+    }
+
+    file.close();
+    fileOut.close();
+    return 0;
     return app.exec();
 }

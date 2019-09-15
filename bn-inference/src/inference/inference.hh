@@ -35,8 +35,11 @@ public:
     void sendPiMessage(Node* parent, Node* child);      // Sender, Receiver
     void sendLambdaMessage(Node* child, Node* parent);  // Sender, Receiver
 
+    // Reset
+    void resetEvidences();
+
     // Get expectations
-    QVector<Normal> getExpectation(QVector<QString> namelist);
+    QHash<QString, Normal> getExpectation(QVector<QString> namelist);
 
 private:
     // Network

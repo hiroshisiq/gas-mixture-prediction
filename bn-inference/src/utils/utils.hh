@@ -25,6 +25,7 @@ class Normal;
 class Utils {
 public:
     static Normal calculateExpectation(Normal pi, Normal lambda);
+    static void printProgress(int row, int max);
 
 private:
     Utils(); // Static Class: deactivate constructor

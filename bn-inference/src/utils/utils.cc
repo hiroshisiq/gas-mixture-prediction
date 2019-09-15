@@ -19,6 +19,8 @@
 
 #include "utils.hh"
 #include <utils/normal.hh>
+#include <iostream>
+#include <QString>
 
 Utils::Utils() {}
 
@@ -34,5 +36,14 @@ Normal Utils::calculateExpectation(Normal pi, Normal lambda) {
         double mean = (pi.variance()*lambda.mean() + lambda.variance()*pi.mean())/(pi.variance() + lambda.variance());
         double variance = (pi.variance()*lambda.variance())/(pi.variance() + lambda.variance());
         return Normal(mean, variance);
+    }
+}
+
+void Utils::printProgress(int row, int max) {
+    static int lastRow;
+
+    if(row >= lastRow + 1000) {
+        lastRow = row;
+        std::cout << "\r" << row << " of " << max << std::flush;
     }
 }
