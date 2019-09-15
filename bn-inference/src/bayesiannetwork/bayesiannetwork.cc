@@ -22,13 +22,16 @@
 
 // Important: this function only works if the nodes on the json are sorted by index
 BayesianNetwork::BayesianNetwork(QString jsonFileName) {
+    // Verbose
+    std::cout << "[BAYESIAN NETWORK] Try to read JSON file" << std::endl;
+
     // Load file
     QFile file(jsonFileName);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
        std::cout << file.errorString().toStdString() << "\n";
        exit(EXIT_FAILURE);
     } else {
-        std::cout << "File \""+ jsonFileName.toStdString() +"\" loaded successfully\n";
+        std::cout << "[BAYESIAN NETWORK] File \""+ jsonFileName.toStdString() +"\" loaded successfully\n";
     }
 
     // Convert text into JSON object
@@ -39,6 +42,8 @@ BayesianNetwork::BayesianNetwork(QString jsonFileName) {
     // Load parameters
     loadNodes(jsonModel);
     loadMatrixB(jsonModel);
+
+    std::cout << "[BAYESIAN NETWORK] Model created successfully" << std::endl;
 }
 
 void BayesianNetwork::loadNodes(QJsonObject jsonModel) {

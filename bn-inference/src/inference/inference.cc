@@ -25,6 +25,9 @@
 #include <iostream>
 
 Inference::Inference(BayesianNetwork *bn) {
+    // Verbose
+    std::cout << "[INFERENCE] Copy model to inference object..." << std::endl;
+
     // Copy reference to network
     _bn = bn;
 
@@ -78,12 +81,13 @@ Inference::Inference(BayesianNetwork *bn) {
         if(_bn->nodeList[i]->getParents().isEmpty()) {
             for(int j=0; j<_bn->nodeList[i]->getChildren().size(); j++) {
                 // Send pi message
-                std::cout << "Send Pi Message from #" << _bn->nodeList[i]->getIndex() << " to #" << _bn->nodeList[i]->getChildren()[j]->getIndex() << "\n";
                 sendPiMessage(_bn->nodeList[i], _bn->nodeList[i]->getChildren()[j]);
             }
         }
     }
 
+    // Verbose
+    std::cout << "[INFERENCE] Inference object initialized" << std::endl;
 }
 
 void Inference::sendLambdaMessage(Node *child, Node *parent) { // from child to parent
@@ -124,13 +128,13 @@ void Inference::sendLambdaMessage(Node *child, Node *parent) { // from child to 
         double chVariance = _lambdaMessage[childIT][indexPA-1].variance();
         if(chVariance!=qInf()) {
             lambdaVariance += (chVariance==0)? qInf() : 1/chVariance;
-            lambdaMean += (chVariance==0)? qInf() : _lambdaMessage[i][indexPA-1].mean()/chVariance;
+            lambdaMean += (chVariance==0)? qInf() : _lambdaMessage[childIT][indexPA-1].mean()/chVariance;
         } // Else sum zero
     }
 
     // Set lambda value
     lambdaVariance = (lambdaVariance==qInf())? 0 : (lambdaVariance==0)? qInf() : 1/lambdaVariance;
-    lambdaMean = lambdaVariance*lambdaMean;
+    lambdaMean = (lambdaMean==0)? 0 : (lambdaVariance==qInf())? qInf() : lambdaVariance*lambdaMean;
     _lambdaValue[indexPA-1] = Normal(lambdaMean, lambdaVariance);
 
     // Calculate expectation
@@ -138,17 +142,23 @@ void Inference::sendLambdaMessage(Node *child, Node *parent) { // from child to 
 
     // Send lambda message to parents
     for(int i=0; i<parent->getParents().size(); i++){
+        // Get other parent index
+        int parentIT = parent->getParents()[i]->getIndex()-1;
+
+        // Skip if has evidence
+        if(_hasEvidence[parentIT]==true) { continue; }
+
         // Send lambda message message
         sendLambdaMessage(parent, parent->getParents()[i]);
     }
 
-    // Send lambda message to other children
+    // Send pi message to other children
     for(int i=0; i<parent->getChildren().size(); i++){
         // Get other parent index
         int childIT = parent->getChildren()[i]->getIndex()-1;
 
         // If got index is the same as indexPA, skip
-        if(childIT == indexCH-1) { continue; }
+        if(childIT == indexCH-1 || _hasEvidence[childIT]==true) { continue; }
 
         // Send lambda message message
         sendPiMessage(parent, parent->getChildren()[i]);
@@ -182,7 +192,7 @@ void Inference::sendPiMessage(Node *parent, Node *child) { // from parent to chi
 
     // Get final value for pi message
     variance = (variance==qInf())? 0 : (variance==0)? qInf() : 1/variance;
-    mean = (variance==qInf())? 0 : (variance==0)? qInf() : mean/variance;
+    mean = (variance==qInf())? qInf() : mean*variance;
     _piMessage[indexCH-1][indexPA-1] = Normal(mean, variance);
 
     // Compute child node pi value and expectation if it hasn't evidence
@@ -218,8 +228,8 @@ void Inference::sendPiMessage(Node *parent, Node *child) { // from parent to chi
             // Get other parent index
             int parentIT = child->getParents()[i]->getIndex()-1;
 
-            // If got index is the same as indexPA, skip
-            if(parentIT == indexPA-1) { continue; }
+            // If got index is the same as indexPA or has evidence, skip
+            if(parentIT == indexPA-1 || _hasEvidence[parentIT]==true) { continue; }
 
             // Send lambda message message
             sendLambdaMessage(child, child->getParents()[i]);
@@ -230,6 +240,65 @@ void Inference::sendPiMessage(Node *parent, Node *child) { // from parent to chi
 //    std::cout << "PiMessage from #" << indexPA << " to #" << indexCH << " (" << mean << ", " << variance << ")\n";
 }
 
-void Inference::updateTree(QVector<QString> name, QVector<double> evidence) {
+void Inference::updateTree(QVector<QString> nodes, QVector<double> evidence) {
+    // Set evidence
+    for(int i=0; i<nodes.size(); i++) {
+        for(int j=0; j<_bn->nodeList.size(); j++) {
+            if(_bn->nodeList[j]->getName() == nodes[i]) {
+                // Set evidence to pi/lambda values and expectation
+                _piValue[j] = Normal(evidence[i], 0);
+                _lambdaValue[j] = Normal(evidence[i], 0);
+                _expectation[j] = Normal(evidence[i], 0);
 
+                // Set flag and break inner loop
+                _hasEvidence[j] = true;
+                break;
+            }
+        }
+    }
+
+    // Send lambda message to parents
+    for(int i=0; i<_bn->nodeList.size(); i++) {
+        if(_hasEvidence[i]==true) {
+            // Send lambda message to parents of node with evidence
+            for(int j=0; j<_bn->nodeList[i]->getParents().size(); j++) {
+                // Skip nodes with evidence
+                if(_hasEvidence[j]==true) { continue; }
+
+                // Send lambda message
+                sendLambdaMessage(_bn->nodeList[i], _bn->nodeList[i]->getParents()[j]);
+            }
+        }
+    }
+
+    // Send pi message to children
+    for(int i=0; i<_bn->nodeList.size(); i++) {
+        if(_hasEvidence[i]==true) {
+            // Send pi message to children of node with evidence
+            for(int j=0; j<_bn->nodeList[i]->getChildren().size(); j++) {
+//                // Skip nodes with evidence
+//                if(_hasEvidence[j]==true) { continue; }
+
+                // Send pi message
+                sendPiMessage(_bn->nodeList[i], _bn->nodeList[i]->getChildren()[j]);
+            }
+        }
+    }
+
+}
+
+QVector<Normal> Inference::getExpectation(QVector<QString> namelist) {
+    QVector<Normal> expArray;
+
+    // Check name list
+    for(int i=0; i<namelist.size(); i++) {
+        for(int j=0; j<_bn->nodeList.size(); j++) {
+            if(_bn->nodeList[j]->getName() == namelist[i]) {
+                expArray.append(_expectation[j]);
+                break;
+            }
+        }
+    }
+
+    return expArray;
 }

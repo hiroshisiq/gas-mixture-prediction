@@ -49,4 +49,8 @@ HEADERS += \
     src/utils/utils.hh
 
 DISTFILES += \
-    data/gas-bn.json
+    data/gas-bn.json \
+    data/ex-45.json \
+    data/ex-48.json \
+    data/ex-46.json \
+    data/ex-44.json

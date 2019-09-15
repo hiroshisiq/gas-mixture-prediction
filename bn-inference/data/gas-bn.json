@@ -1,7 +1,7 @@
 {
   "name": "Bayesian Network",
   "nodes": [
-    {"name": "C02", 
+    {"name": "CO2",
      "index":1, 
      "prior": {"mean":127.620212, "var":1436.07355800}},
     {"name": "Ethylene", 

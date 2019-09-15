@@ -31,12 +31,12 @@ public:
     Inference(BayesianNetwork* bn);
 
     // Belief Propagation for GBN
-    void updateTree(QVector<QString> name, QVector<double> evidence);
+    void updateTree(QVector<QString> nodes, QVector<double> evidence);
     void sendPiMessage(Node* parent, Node* child);      // Sender, Receiver
     void sendLambdaMessage(Node* child, Node* parent);  // Sender, Receiver
 
     // Get expectations
-    QVector<double> getExpectation(QVector<QString> name);
+    QVector<Normal> getExpectation(QVector<QString> namelist);
 
 private:
     // Network
